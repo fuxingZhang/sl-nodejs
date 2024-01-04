@@ -1,4 +1,8 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 const D51HEIGHT = 10;
 const D51FUNNEL = 7;
 const D51LENGTH = 83;
@@ -114,26 +118,23 @@ let LOGO = 0;
 let FLY = 0;
 let C51 = 0;
 const ERR = -1;
+// const { stdout } = process;
+const termbox_1 = __importDefault(require("./termbox"));
+const termbox = new termbox_1.default();
 // const COLS = process.stdout.columns;
 // const LINES = process.stdout.rows;
-const [COLS, LINES] = process.stdout.getWindowSize();
-// const { stdout } = process;
-const Cursor = require("./cursor");
-const cursor = new Cursor(process.stdout);
+// const [COLS, LINES] = process.stdout.getWindowSize();
+const { columns: COLS, rows: LINES } = termbox.size();
 function my_mvaddstr(y, x, str) {
-    if (y < 0)
-        return;
     for (; x < 0; x++, str = str.substring(1)) {
         if (str.length == 0) {
             return;
         }
     }
-    // for (let i = 0, len = str.length; i < len && x < COLS; i++, x++) {
-    //   cursor.to(x, y);
-    //   stdout.write(str[i]);
-    // }
-    cursor.to(x, y);
-    cursor.write(str.substring(0, COLS - x));
+    for (const char of str) {
+        termbox.setCell(x, y, char);
+        x++;
+    }
 }
 function option(str) {
     for (const char of str) {
@@ -158,7 +159,7 @@ function option(str) {
 function sleep(seconds) {
     return new Promise((resolve) => setTimeout(resolve, seconds));
 }
-const add_sl = function () {
+const add_sl = (function () {
     const sl = [
         [LOGO1, LOGO2, LOGO3, LOGO4, LWHL11, LWHL12, DELLN],
         [LOGO1, LOGO2, LOGO3, LOGO4, LWHL21, LWHL22, DELLN],
@@ -195,8 +196,8 @@ const add_sl = function () {
         }
         add_smoke(y - 1, x + LOGOFUNNEL);
     };
-}();
-const add_D51 = function add_D51() {
+})();
+const add_D51 = (function add_D51() {
     const d51 = [
         [
             D51STR1,
@@ -309,8 +310,8 @@ const add_D51 = function add_D51() {
         }
         add_smoke(y - 1, x + D51FUNNEL);
     };
-}();
-const add_smoke = function () {
+})();
+const add_smoke = (function () {
     const SMOKEPTNS = 16;
     const S = new Array(1000).fill(null).map(() => ({
         y: 0,
@@ -383,7 +384,7 @@ const add_smoke = function () {
                 my_mvaddstr(S[i].y, S[i].x, Eraser[S[i].ptrn]);
                 S[i].y -= dy[S[i].ptrn];
                 S[i].x += dx[S[i].ptrn];
-                S[i].ptrn += (S[i].ptrn < SMOKEPTNS - 1) ? 1 : 0;
+                S[i].ptrn += S[i].ptrn < SMOKEPTNS - 1 ? 1 : 0;
                 my_mvaddstr(S[i].y, S[i].x, Smoke[S[i].kind][S[i].ptrn]);
             }
             my_mvaddstr(y, x, Smoke[sum % 2][0]);
@@ -394,8 +395,8 @@ const add_smoke = function () {
             sum++;
         }
     };
-}();
-const add_man = function () {
+})();
+const add_man = (function () {
     const man = [
         ["", "(O)"],
         ["Help!", "\\O/"],
@@ -405,8 +406,8 @@ const add_man = function () {
             my_mvaddstr(y + i, x, man[Math.floor((LOGOLENGTH + x) / 12) % 2][i]);
         }
     };
-}();
-const add_C51 = function () {
+})();
+const add_C51 = (function () {
     const c51 = [
         [
             C51STR1,
@@ -526,7 +527,7 @@ const add_C51 = function () {
         }
         add_smoke(y - 1, x + C51FUNNEL);
     };
-}();
+})();
 async function main() {
     const args = process.argv.slice(2);
     for (const arg of args) {
@@ -534,10 +535,11 @@ async function main() {
             option(arg.substring(1));
         }
     }
-    cursor.save();
-    cursor.hide();
-    cursor.to(0, 0);
-    cursor.clearScreenDown();
+    // const { columns, rows } = await termbox.cursorPostion();
+    // termbox.cursorSave();
+    termbox.cursorHide();
+    // termbox.cursorTo(0, 0);
+    termbox.screenClearDown();
     for (let x = COLS - 1;; --x) {
         if (LOGO === 1) {
             if (add_sl(x) === ERR)
@@ -551,10 +553,14 @@ async function main() {
             if (add_D51(x) === ERR)
                 break;
         }
+        await termbox.flush();
         await sleep(40);
     }
-    cursor.clearScreenDown();
-    cursor.restore();
-    cursor.show();
+    // termbox.cursorTo(rows - 1, columns - 1);
+    termbox.cursorTo(LINES - 1, COLS - 1);
+    // termbox.cursorTo(0, 0);
+    termbox.screenClearDown();
+    // termbox.cursorRestore();
+    termbox.cursorShow();
 }
 main();
