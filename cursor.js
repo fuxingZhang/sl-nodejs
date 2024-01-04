@@ -4,6 +4,11 @@ const _readline = require("readline");
 class Cursor {
   constructor(outputStream) {
     this.stream = outputStream;
+    this.stream.cork()
+  }
+
+  flush() {
+    this.stream.uncork()
   }
 
   // save cursor position + settings
